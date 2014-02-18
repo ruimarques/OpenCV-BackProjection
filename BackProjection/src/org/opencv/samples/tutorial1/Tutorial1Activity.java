@@ -1,10 +1,7 @@
 package org.opencv.samples.tutorial1;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -31,7 +28,6 @@ import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -53,20 +49,26 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
 
     private int outputWidth=300;
     private int outputHeight=200;
-    private Mat mOutputROI;
     
     private Bitmap mBitmap;
    
-    /// Global Variables
     private boolean bpUpdated = false;
     
     private Mat mRgba;
     private Mat mHSV;
     private Mat mask;
 
+    // Imgproc.floodFill vars
+    private Mat mask2;
     private int lo = 20; 
     private int up = 20;
-
+    
+    private Scalar newVal;
+    private Scalar loDiff;
+    private Scalar upDiff;
+    
+    private Range rowRange;
+    private Range colRange;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -165,14 +167,19 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
     }
 
     public void onCameraViewStarted(int width, int height) {
-
     	mRgba = new Mat(height, width, CvType.CV_8UC3);
     	mHSV = new Mat();
 
     	mIntermediateMat = new Mat();
     	mGray = new Mat(height, width, CvType.CV_8UC1);
-
-    	mOutputROI = new Mat(outputHeight, outputWidth, CvType.CV_8UC1);
+    	
+    	mask2  = Mat.zeros( mRgba.rows() + 2, mRgba.cols() + 2, CvType.CV_8UC1 );
+    	newVal = new Scalar( 120, 120, 120 );
+    	loDiff = new Scalar( lo, lo, lo );
+    	upDiff = new Scalar( up, up, up );
+    	
+    	rowRange = new Range( 1, mask2.rows() - 1 );
+    	colRange = new Range( 1, mask2.cols() - 1 );
 
     	mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);        
     }
@@ -183,9 +190,17 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
             mIntermediateMat.release();
         mIntermediateMat = null;
         
-        if(mRgba!= null)
-        	mRgba.release();
-        mRgba = null;
+        if(mHSV!= null)
+        	mHSV.release();
+        mHSV = null;
+        
+        if(mGray!= null)
+        	mGray.release();
+        mGray = null;
+        
+        if (mIntermediateMat != null)
+            mIntermediateMat.release();
+        mIntermediateMat = null;
         
         if (mBitmap != null) {
             mBitmap.recycle();
@@ -224,31 +239,25 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
 	public boolean onTouch(View arg0, MotionEvent arg1) {
 
 		// Fill and get the mask
-		Point seed = getImageCoordinates(mRgba, arg1.getX(), arg1.getY());
+		Point seed = UtilsOpenCV.getImageCoordinates(getWindowManager(), mRgba, arg1.getX(), arg1.getY());
 		
-		Log.d(TAG, "seed: "+seed +" type: "+CvType.typeToString(mRgba.type()));	
+		Log.d(TAG, "seed: "+seed +" type: "+CvType.typeToString(mRgba.type()));		
 		
 		int newMaskVal = 255;
-		Scalar newVal = new Scalar( 120, 120, 120 );
-
 		int connectivity = 8;
-		int flags = connectivity + (newMaskVal << 8 ) + Imgproc.FLOODFILL_FIXED_RANGE + Imgproc.FLOODFILL_MASK_ONLY;
-
-		Mat mask2 = Mat.zeros( mRgba.rows() + 2, mRgba.cols() + 2, CvType.CV_8UC1 );
+		int flags = connectivity + (newMaskVal << 8 ) + Imgproc.FLOODFILL_FIXED_RANGE + Imgproc.FLOODFILL_MASK_ONLY;		
 		
 		Rect rect = null;
-		Imgproc.floodFill( mRgba, mask2, seed, newVal, rect, new Scalar( lo, lo, lo ), new Scalar( up, up, up), flags );
-		
+		Imgproc.floodFill( mRgba, mask2, seed, newVal, rect, loDiff, upDiff, flags );		
 		
 		// C++: 
 		// mask = mask2( new Range( 1, mask2.rows() - 1 ), new Range( 1, mask2.cols() - 1 ) );
-		mask = mask2.submat(new Range( 1, mask2.rows() - 1 ), new Range( 1, mask2.cols() - 1 ));
+		mask = mask2.submat(rowRange, colRange);
 
 		mGray = histAndBackproj();
 		bpUpdated = true;
 		
-		Log.d(TAG, "onTouch result: type:"+CvType.typeToString(mGray.type())+" size: "+mGray.size());
-		
+		Log.d(TAG, "onTouch result: type:"+CvType.typeToString(mGray.type())+" size: "+mGray.size());		
 		
 		return true;
 	}
@@ -282,8 +291,10 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
 		// 'mask' – Optional mask. If the matrix is not empty, it must be an 8-bit array of the same size as images[i] . 
 		// The non-zero mask elements mark the array elements counted in the histogram.
 		
+		List<Mat> lHSV = Arrays.asList(mHSV);
+		
 		boolean accumulate = false;
-        Imgproc.calcHist(Arrays.asList(mHSV), mChannels, mask, hist, mHistSize, mRanges, accumulate);
+        Imgproc.calcHist(lHSV, mChannels, mask, hist, mHistSize, mRanges, accumulate);
        
         // C++:
         // normalize( hist, hist, 0, 255, NORM_MINMAX, -1, Mat() );        
@@ -292,32 +303,8 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
         // C++:
         // calcBackProject( &hsv, 1, channels, hist, backproj, ranges, 1, true );        
         Mat backproj = new Mat();
-        Imgproc.calcBackProject(Arrays.asList(mHSV), mChannels, hist, backproj, mRanges, 1);
+        Imgproc.calcBackProject(lHSV, mChannels, hist, backproj, mRanges, 1);
 
         return backproj;
 	}
-	
-	
-	/**
-	 * Method to scale screen coordinates to image coordinates, 
-	 * as they have different resolutions.
-	 * 
-	 * x - width; y - height; 
-	 * Nexus 4: xMax = 1196; yMax = 768
-	 * 
-	 * @param displayX
-	 * @param displayY
-	 * @return
-	 */
-	private Point getImageCoordinates(Mat image, float displayX, float displayY){
-		Display display = getWindowManager().getDefaultDisplay();		
-		android.graphics.Point outSize = new android.graphics.Point();
-		display.getSize(outSize);
-		
-		float xScale = outSize.x / (float) image.width();
-		float yScale = outSize.y / (float) image.height();					
-		
-		return new Point(displayX/xScale, displayY/yScale);
-	}
-    
 }
