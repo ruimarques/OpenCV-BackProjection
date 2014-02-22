@@ -1,7 +1,6 @@
 package org.opencv.tutorials.imgproc;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -9,7 +8,6 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -23,10 +21,7 @@ import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.FeatureDetector;
-import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.samples.tutorial1.R;
-import org.opencv.utils.Converters;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 
