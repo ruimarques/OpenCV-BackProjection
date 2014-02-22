@@ -245,26 +245,6 @@ public class BackProjectionActivity extends Activity implements CvCameraViewList
 
 	@Override
 	public boolean onTouch(View arg0, MotionEvent arg1) {
-		File storage = Environment.getExternalStorageDirectory();
-		String path = storage.getAbsolutePath()+"/opencv/file.bin";
-		
-		FeatureDetector detector = FeatureDetector.create(FeatureDetector.GRID_ORB);
-		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
-		
-		MatOfKeyPoint kpts = new MatOfKeyPoint();
-		detector.detect(mRgba, kpts);
-		
-		Mat descriptors = new Mat();
-		extractor.compute(mGray, kpts, descriptors);
-		
-		Log.d(TAG, "test - descriptors "+descriptors);			
-				
-		UtilsOpenCV.matToJson(descriptors);
-		
-		//UtilsOpenCV.matStore(path, descriptors);
-		
-		// UtilsOpenCV.matRetrieve(path, rows, cols, type);
-		
 
 		// Fill and get the mask
 		Point seed = UtilsOpenCV.getImageCoordinates(getWindowManager(), mRgba, arg1.getX(), arg1.getY());
@@ -288,6 +268,29 @@ public class BackProjectionActivity extends Activity implements CvCameraViewList
 		Log.d(TAG, "onTouch result: type:"+CvType.typeToString(mGray.type())+" size: "+mGray.size());		
 		
 		return true;
+	}
+	
+	private void testMatSerialization(){
+		File storage = Environment.getExternalStorageDirectory();
+		String path = storage.getAbsolutePath()+"/opencv/file.bin";
+		
+		FeatureDetector detector = FeatureDetector.create(FeatureDetector.GRID_ORB);
+		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
+		
+		MatOfKeyPoint kpts = new MatOfKeyPoint();
+		detector.detect(mRgba, kpts);
+		
+		Mat descriptors = new Mat();
+		extractor.compute(mGray, kpts, descriptors);
+		
+		Log.d(TAG, "test - descriptors "+descriptors);			
+				
+		UtilsOpenCV.matToJson(descriptors);
+		
+		//UtilsOpenCV.matStore(path, descriptors);
+		
+		// UtilsOpenCV.matRetrieve(path, rows, cols, type);
+		
 	}
 	
 	// int mHistSizeNum = 25;
