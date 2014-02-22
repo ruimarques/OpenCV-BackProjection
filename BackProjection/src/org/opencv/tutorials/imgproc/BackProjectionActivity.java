@@ -1,5 +1,7 @@
-package org.opencv.samples.tutorial1;
+package org.opencv.tutorials.imgproc;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,13 +15,18 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfFloat;
 import org.opencv.core.MatOfInt;
+import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Range;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
+import org.opencv.features2d.DescriptorExtractor;
+import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.samples.tutorial1.R;
+import org.opencv.utils.Converters;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 
@@ -27,6 +34,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -37,7 +45,7 @@ import android.view.View.OnTouchListener;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-public class Tutorial1Activity extends Activity implements CvCameraViewListener2, OnTouchListener {
+public class BackProjectionActivity extends Activity implements CvCameraViewListener2, OnTouchListener {
     private static final String TAG = "OCVSample::Activity";
 
     private CameraBridgeViewBase mOpenCvCameraView;
@@ -78,7 +86,7 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
                 {
                     Log.i(TAG, "OpenCV loaded successfully");
                     mOpenCvCameraView.enableView();
-                    mOpenCvCameraView.setOnTouchListener(Tutorial1Activity.this);
+                    mOpenCvCameraView.setOnTouchListener(BackProjectionActivity.this);
                 } break;
                 default:
                 {
@@ -88,7 +96,7 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
         }
     };
 
-    public Tutorial1Activity() {
+    public BackProjectionActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
@@ -237,6 +245,26 @@ public class Tutorial1Activity extends Activity implements CvCameraViewListener2
 
 	@Override
 	public boolean onTouch(View arg0, MotionEvent arg1) {
+		File storage = Environment.getExternalStorageDirectory();
+		String path = storage.getAbsolutePath()+"/opencv/file.bin";
+		
+		FeatureDetector detector = FeatureDetector.create(FeatureDetector.GRID_ORB);
+		DescriptorExtractor extractor = DescriptorExtractor.create(DescriptorExtractor.ORB);
+		
+		MatOfKeyPoint kpts = new MatOfKeyPoint();
+		detector.detect(mRgba, kpts);
+		
+		Mat descriptors = new Mat();
+		extractor.compute(mGray, kpts, descriptors);
+		
+		Log.d(TAG, "test - descriptors "+descriptors);			
+				
+		UtilsOpenCV.matToJson(descriptors);
+		
+		//UtilsOpenCV.matStore(path, descriptors);
+		
+		// UtilsOpenCV.matRetrieve(path, rows, cols, type);
+		
 
 		// Fill and get the mask
 		Point seed = UtilsOpenCV.getImageCoordinates(getWindowManager(), mRgba, arg1.getX(), arg1.getY());

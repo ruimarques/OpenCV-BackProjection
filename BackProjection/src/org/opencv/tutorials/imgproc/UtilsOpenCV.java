@@ -1,4 +1,4 @@
-package org.opencv.samples.tutorial1;
+package org.opencv.tutorials.imgproc;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import android.os.Environment;
+import android.util.Base64;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
@@ -50,8 +51,7 @@ public class UtilsOpenCV {
 		return new Point(displayX/xScale, displayY/yScale);
 	}
 	
-	//File storage = Environment.getExternalStorageDirectory();
-	//String path = storage.getAbsolutePath()+"/backProjection/"+fileName;
+
 	
 	public static Mat matRetrieve(String filePath, int rows, int cols, int type){
 		Log.d(TAG, "matRetrieve - path: "+filePath);
@@ -91,13 +91,10 @@ public class UtilsOpenCV {
     	return null;
     }
 	
-	
-    //File storage = Environment.getExternalStorageDirectory();
-	//String path = storage.getAbsolutePath()+"/PHAR/"+fileName;
     public static void matStore(String filePath, Mat mat){
     	Log.d(TAG, "matStore - path: "+filePath);
     	
-    	if(isExternalStorageWritable()){
+    	if(isExternalStorageWritable() && mat.isContinuous()){
     		int cols = mat.cols();
         	int rows = mat.rows();
         	int elemSize = (int) mat.elemSize(); // or  mat.channels() ?        	
@@ -114,6 +111,64 @@ public class UtilsOpenCV {
     	} else {
     		Log.e(TAG, "External Storage not writable.");
     	}
+    }
+    
+    public static String matToJson(Mat mat){
+    	Log.d(TAG, "matToJson");
+    	
+    	JsonObject obj = new JsonObject();
+    	
+    	if(mat.isContinuous()){
+    		int cols = mat.cols();
+        	int rows = mat.rows();
+        	int elemSize = (int) mat.elemSize();	
+        	
+        	byte[] data = new byte[cols * rows * elemSize];
+
+        	mat.get(0, 0, data);
+        	
+        	obj.addProperty("rows", mat.rows()); 
+        	obj.addProperty("cols", mat.cols()); 
+        	obj.addProperty("type", mat.type());
+        	
+        	// We cannot set binary data to a json object, so:
+        	// Encoding data byte array to Base64.
+        	String dataString = new String(Base64.encode(data, Base64.DEFAULT));
+        	
+        	Log.d(TAG, "matToJson - dataString: "+dataString); 
+        	
+        	obj.addProperty("data", dataString);
+        	
+        	
+        	Gson gson = new Gson();
+        	String json = gson.toJson(obj);
+        	
+        	Log.d(TAG, "matToJson - json: "+json); 
+        	
+        	return json;
+    	} else {
+    		Log.e(TAG, "Mat not continuous.");
+    	}
+    	return "{}";
+    }
+    
+    public static Mat matFromJson(String json){
+    	Log.d(TAG, "matToJson");
+    	
+    	JsonParser parser = new JsonParser();
+    	JsonObject JsonObject = parser.parse(json).getAsJsonObject();
+    	
+    	int rows = JsonObject.get("rows").getAsInt();
+    	int cols = JsonObject.get("cols").getAsInt();
+    	int type = JsonObject.get("type").getAsInt();
+    	
+    	String dataString = JsonObject.get("data").getAsString();    	
+    	byte[] data = Base64.decode(dataString.getBytes(), Base64.DEFAULT); 
+    	
+    	Mat mat = new Mat(rows, cols, type);
+    	mat.put(0, 0, data);
+    	
+    	return mat;
     }
     
     public static String keypointsToJson(MatOfKeyPoint mat){
@@ -145,7 +200,7 @@ public class UtilsOpenCV {
     		
     		return json;
     	}
-    	return "";
+    	return "{}";
     }
     
     public static MatOfKeyPoint keypointsFromJson(String json){
