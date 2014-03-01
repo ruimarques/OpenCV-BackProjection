@@ -12,11 +12,11 @@ SETUP:
 
 This tutorial is setup the same way as the official OpenCV Android samples. Follow the install instructions for those here:
 
-http://docs.opencv.org/doc/tutorials/introduction/android_binary_package/O4A_SDK.html
+- http://docs.opencv.org/doc/tutorials/introduction/android_binary_package/O4A_SDK.html
 
 Original tutorial in C++:
 
- - http://docs.opencv.org/doc/tutorials/imgproc/histograms/back_projection/back_projection.html
+- http://docs.opencv.org/doc/tutorials/imgproc/histograms/back_projection/back_projection.html
 
 LICENSE:
 
