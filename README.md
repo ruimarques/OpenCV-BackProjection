@@ -20,4 +20,6 @@ Original tutorial in C++:
 
 LICENSE:
 
-The license for this code is the same as OpenCV: BSD. It means that you can do basically whatever you like with the code as long as you include its LICENSE file. You may read the details in the LICENSE file. 
+The license for this code is the same as OpenCV: BSD 2-Clause.  
+It means that you can do basically whatever you like with the code as long as you include its LICENSE file.  
+You may read the details in the LICENSE file. 
